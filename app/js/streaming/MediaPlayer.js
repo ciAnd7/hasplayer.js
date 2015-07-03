@@ -35,10 +35,10 @@
  * 5) Load fragments.
  * 6) Transform fragments.
  * 7) Push fragmemt bytes into SourceBuffer.
- * 
- * 
+ *
+ *
  * @constructs MediaPlayer
- * @param aContext - context used by the MediaPlayer. For the hasplayer, CustomContext is used. The context class is used to
+ * @param aContext - context used by the MediaPlayer. The context class is used to
  * inject dijon dependances.
  */
 MediaPlayer = function (aContext) {
@@ -79,20 +79,22 @@ MediaPlayer = function (aContext) {
          */
         play = function () {
             if (!initialized) {
-                throw "MediaPlayer not initialized!";
+                this.errHandler.sendError(MediaPlayer.dependencies.ErrorHandler.prototype.HASPLAYER_INIT_ERROR, "MediaPlayer not initialized!");
+                return;
             }
 
             if (!this.capabilities.supportsMediaSource()) {
-                this.errHandler.capabilityError("mediasource");
+                this.errHandler.sendError(MediaPlayer.dependencies.ErrorHandler.prototype.CAPABILITY_ERR_MEDIASOURCE);
                 return;
             }
 
             if (!element || !source) {
-                throw "Missing view or source.";
+                this.errHandler.sendError(MediaPlayer.dependencies.ErrorHandler.prototype.HASPLAYER_INIT_ERROR, "Missing view or source.");
+                return;
             }
 
             playing = true;
-            
+
             //this.debug.log("Playback initiated!");
             if (!streamController) {
                 streamController = system.getObject("streamController");
@@ -147,7 +149,8 @@ MediaPlayer = function (aContext) {
         },
 
         /**
-         * seek to a special time (seconds) in the stream
+         * seek to a special time (seconds) in the stream.
+         * html5 video currentTime parameter is better to use than this function.
          * @access public
          */
         seek = function(value) {
@@ -278,21 +281,30 @@ MediaPlayer = function (aContext) {
         config: undefined,
 
         /**
+         * function used to register webapp function on hasplayer events
          * @access public
          * @memberof MediaPlayer#
-         * @param  type - .
-         * @param  listener - .
+         * @param  type - event type event type log, error, subtitlesStyleChanged, updateend, manifestLoaded, metricChanged, metricsChanged, metricAdded
+         *  and metricUpdated.
+         * @param  listener - function callback name.
          * @param  useCapture - .
          */
         addEventListener: function (type, listener, useCapture) {
+            if (!initialized) {
+                //not used sendError....listener must be registered to use it.
+                throw "MediaPlayer not initialized!";
+            }
+
             this.eventBus.addEventListener(type, listener, useCapture);
         },
 
         /**
+         * function used to unregister webapp function on hasplayer events
          * @access public
          * @memberof MediaPlayer#
-         * @param  type - .
-         * @param  listener - .
+         * @param  type - event type : log, error, subtitlesStyleChanged, updateend, manifestLoaded, metricChanged, metricsChanged, metricAdded
+         *  and metricUpdated.
+         * @param  listener - function callback name.
          * @param  useCapture - .
          * @return TBD
          */
@@ -348,7 +360,7 @@ MediaPlayer = function (aContext) {
 
         /**
          * @access public
-         * @memberof MediaPlayer# 
+         * @memberof MediaPlayer#
          */
         startup: function () {
             if (!initialized) {
@@ -477,7 +489,8 @@ MediaPlayer = function (aContext) {
         },
 
         /**
-         * select quality level for audio or video stream
+         * select quality level for audio or video stream.
+         * If you want to set limit up and down for video for instance, you have to use setConfig function.
          * @access public
          * @memberof MediaPlayer#
          * @param type - audio or video stream type.
@@ -496,7 +509,7 @@ MediaPlayer = function (aContext) {
         getAutoSwitchQuality : function () {
             return this.abrController.getAutoSwitchBitrate();
         },
-        
+
         /**
          * function to enable or disable auto switch quality by ABR controller.
          * @access public
@@ -513,7 +526,7 @@ MediaPlayer = function (aContext) {
          * @memberof MediaPlayer#
          * @param params - configuration parameters
          * @see {@link http://localhost:8080/OrangeHasPlayer/samples/Dash-IF/hasplayer_config.json}
-         * 
+         *
          */
         setConfig: function (params) {
             if (this.config && params) {
@@ -556,7 +569,7 @@ MediaPlayer = function (aContext) {
         /**
          * get the subtitle track list
          * @access public
-         * @memberof MediaPlayer#         
+         * @memberof MediaPlayer#
          * @return subtitle tracks array.
          */
         getSubtitleTracks: function(){
@@ -571,7 +584,8 @@ MediaPlayer = function (aContext) {
          */
         attachView: function (view) {
             if (!initialized) {
-                throw "MediaPlayer not initialized!";
+                this.errHandler.sendError(MediaPlayer.dependencies.ErrorHandler.prototype.HASPLAYER_INIT_ERROR, "MediaPlayer not initialized!");
+                return;
             }
 
             element = view;
@@ -583,7 +597,6 @@ MediaPlayer = function (aContext) {
             }
 
             // TODO : update
-
             if (playing && streamController) {
                 streamController.reset();
                 playing = false;
@@ -593,7 +606,7 @@ MediaPlayer = function (aContext) {
                 doAutoPlay.call(this);
             }
         },
-        
+
         /**
          * add source stream parameters (ex: DRM custom data)
          * @function
@@ -603,11 +616,23 @@ MediaPlayer = function (aContext) {
          * @param  params - datas like back Url licenser and custom datas
          */
         attachSource: function (url, protData) {
+            var loop,
+                videoModel;
+
             if (!initialized) {
-                throw "MediaPlayer not initialized!";
+                this.errHandler.sendError(MediaPlayer.dependencies.ErrorHandler.prototype.HASPLAYER_INIT_ERROR, "MediaPlayer not initialized!");
+                return;
+            }          
+                        
+            videoModel = this.getVideoModel();
+
+            if (!videoModel) {
+                this.errHandler.sendError(MediaPlayer.dependencies.ErrorHandler.prototype.HASPLAYER_INIT_ERROR, "videoModel not initialized");
+                return;
             }
+
             // ORANGE : add metric
-            var loop = this.getVideoModel().getElement().loop;
+            loop = videoModel.getElement().loop;
             this.metricsModel.addSession(null, url, loop, null,"HasPlayer.js_"+this.getVersionHAS());
 
             this.uriQueryFragModel.reset();
@@ -636,7 +661,6 @@ MediaPlayer = function (aContext) {
          */
         reset: function() {
             this.attachSource(null);
-            this.attachView(null);
             protectionData = null;
         },
 
@@ -667,8 +691,10 @@ MediaPlayer.dependencies = {};
 MediaPlayer.dependencies.protection = {};
 MediaPlayer.utils = {};
 MediaPlayer.models = {};
+MediaPlayer.modules = {};
 MediaPlayer.vo = {};
 MediaPlayer.vo.metrics = {};
 MediaPlayer.vo.protection = {};
 MediaPlayer.rules = {};
+MediaPlayer.rules.o = {};
 MediaPlayer.di = {};

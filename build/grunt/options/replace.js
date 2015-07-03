@@ -39,6 +39,18 @@ module.exports = {
         options: {
             patterns: [
             {
+                match: /"[ \S]*\/Context.js"/,
+                replacement: '"../<%= preprocesspath %>/Context.js"'
+            },
+            {
+                match: /"[ \S]*\/Stream.js"/,
+                replacement: '"../<%= preprocesspath %>/Stream.js"'
+            },
+            {
+                match: /"[ \S]*\/MssParser.js"/,
+                replacement: '"../<%= preprocesspath %>/MssParser.js"'
+            },
+            {
                 match: /<!-- source -->/,
                 replacement: '<!-- build:js hasplayer.js -->'
             },
@@ -49,7 +61,7 @@ module.exports = {
             ]
         },
         files: [
-            {expand: true, flatten: true, src: ['<%= samples %>/playerSrc.html'], dest: '<%= path %>/source'}
+            {expand: true, flatten: true, src: ['<%= preprocesspath %>/playerSrc.html'], dest: '<%= path %>/source/'}
         ]
     },
 

@@ -112,8 +112,21 @@ MediaPlayer.models.ProtectionModel_21Jan2015 = function () {
                     switch (event.type) {
 
                         case "keystatuseschange":
-                            self.notify(MediaPlayer.models.ProtectionModel.eventList.ENAME_KEY_STATUSES_CHANGED,
-                                    this);
+                         event.target.keyStatuses.forEach(function(status, keyId, map) {
+                              switch (status) {                              
+                                case "expired":
+                                  // Report an expired key.
+                                  self.notify(MediaPlayer.models.ProtectionModel.eventList.ENAME_KEY_STATUSES_CHANGED, null,
+                                        new MediaPlayer.vo.Error(MediaPlayer.dependencies.ErrorHandler.prototype.MEDIA_ERR_ENCRYPTED, "License has expired!!!", null));
+                                  break;
+                                case "usable":
+                                case "status-pending":
+                                default:
+                                    self.notify(MediaPlayer.models.ProtectionModel.eventList.ENAME_KEY_STATUSES_CHANGED,
+                                        {status:status, keyId: keyId});
+                                }
+                              });
+                           
                             break;
 
                         case "message":
@@ -174,6 +187,7 @@ MediaPlayer.models.ProtectionModel_21Jan2015 = function () {
         teardown: function() {
             if (videoElement) {
                 videoElement.removeEventListener("encrypted", eventHandler);
+                videoElement.setMediaKeys(null);
             }
             for (var i = 0; i < sessions.length; i++) {
                 this.closeKeySession(sessions[i]);
@@ -264,8 +278,28 @@ MediaPlayer.models.ProtectionModel_21Jan2015 = function () {
                 message = message.toJWK();
             }
             session.update(message).catch(function (error) {
+                var data = {},
+                    codeError = -1;
+               
+                data.sessionToken = sessionToken;
+                data.systemCode = null;
+                // TO DO : try to specify Hasplayer error with the DOM error
+                switch(error.code) {
+                    case 22 /* DOM Quota Exceeded Error*/ :
+                        /* falls through */
+                    case 15 /* DOM Invalid Access Error*/ :
+                        /* falls through */
+                    case 11 /* DOM Invalid State Error*/ :
+                        /* falls through */
+                    case 9  /* DOM Not Supported Error*/ :
+                        /* falls through */
+                    default :
+                        codeError = MediaPlayer.dependencies.ErrorHandler.prototype.MEDIA_KEYMESSERR;
+                        break;
+                }
+
                 self.notify(MediaPlayer.models.ProtectionModel.eventList.ENAME_KEY_ERROR,
-                    new MediaPlayer.vo.protection.KeyError(sessionToken, "Error sending update() message! " + error.name));
+                    new MediaPlayer.vo.Error(codeError, "Error sending update() message! " + error.name, data));
             });
         },
 

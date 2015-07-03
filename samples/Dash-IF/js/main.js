@@ -509,9 +509,34 @@ app.controller('DashController', ['$scope', '$window', 'Sources', 'Notes','Contr
     ////////////////////////////////////////
 
     function onError(e) {
-        console.error(e);
-        //stop
-        player.reset();
+        console.error("an error has occured with error code = "+e.event.code);
+
+        switch (e.event.code) {
+            case "DOWNLOAD_ERR_MANIFEST" :
+            case "DOWNLOAD_ERR_SIDX" :
+            case "DOWNLOAD_ERR_CONTENT" :
+            case "DOWNLOAD_ERR_INIT" :  
+                 console.error(" url :\""+e.event.data.url+"\" and request response :\""+ e.event.data.request.responseXML+"\"");
+                 break;
+            case "MANIFEST_ERR_CODEC" :
+            case "MANIFEST_ERR_PARSE" :
+            case "MANIFEST_ERR_NOSTREAM" :
+                 console.error("Manifest URL was "+e.event.data.mpdUrl+" with message :\""+e.event.message+"\"");
+                 break;
+            case "CC_ERR_PARSE" : 
+                 console.error("message :\""+e.event.message+"\" for content = "+e.event.data);
+                 break;
+            default :
+                 if (e.event.message) {
+                    console.error("message :\""+e.event.message+"\"");
+                 }
+                 break;
+        };
+
+        if (e.event.code != "HASPLAYER_INIT_ERROR") {
+            //stop
+            player.reset();
+        }
     }
 
     ////////////////////////////////////////
@@ -590,7 +615,7 @@ app.controller('DashController', ['$scope', '$window', 'Sources', 'Notes','Contr
     ////////////////////////////////////////
 
     video = document.querySelector(".dash-video-player video");
-    context = new Custom.di.CustomContext();
+    context = new MediaPlayer.di.Context();
     player = new MediaPlayer(context);
     
     $scope.version = player.getVersion();
@@ -873,6 +898,3 @@ app.controller('DashController', ['$scope', '$window', 'Sources', 'Notes','Contr
         }
     }
 }]);
-
-
-

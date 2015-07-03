@@ -1,16 +1,17 @@
 module.exports = function(grunt) {
 
+    grunt.config.set('rootpath',        '../');
+    grunt.config.set('preprocesspath',  '../build/.tmp/preprocess');
     grunt.config.set('path',            '../dist');
     grunt.config.set('samples',         '../samples');
     grunt.config.set('appDemoPlayer',   '../samples/DemoPlayer');
     grunt.config.set('app4Ever',        '../samples/4Ever');
     grunt.config.set('appDashif',       '../samples/Dash-IF');
     grunt.config.set('appABRTest',      '../samples/ABRTest/');
-    
-    
 
     grunt.registerTask('build', [
         'clean:start',              // Empty folder
+        'preprocess:multifile',     // Preprocess files
         'copy',                     // Copy HTML files
         'replace:sourceByBuild',    // Replace source by call for hasplayer.js
         'replace:sourceForBuild',   // Prepare source file for hasplayer.js
@@ -33,5 +34,4 @@ module.exports = function(grunt) {
         'replace:chromecastId',     // Change to Online APP_ID for chromecast
         'clean:end'                 // Clean temp files
     ]);
-
 };
