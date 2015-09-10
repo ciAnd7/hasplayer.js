@@ -72,6 +72,8 @@ MediaPlayer.dependencies.BufferController = function () {
 
         currentSequenceNumber = -1,
 
+        DYNAMIC_MIN_BUFFER_LEVEL = 0.5,
+
         sendRequest = function() {
 
             // Check if running state
@@ -352,9 +354,29 @@ MediaPlayer.dependencies.BufferController = function () {
 
                                         // In case of live streams, remove outdated buffer parts and requests
                                         if (isDynamic) {
-                                            removeBuffer.call(self, -1, self.videoModel.getCurrentTime() - minBufferTime).then(
+                                            var ranges = self.sourceBufferExt.getAllRanges(buffer);
+                                            self.debug.info("[BufferController]["+type+"] Check to removing dynamic ranges " + ranges.length);
+                                            var currentTime = self.videoModel.getCurrentTime();
+                                            var removeEnd = currentTime - minBufferTime;
+                                            if (ranges.length > 1) {
+                                                // in case of more than one ranges, check to jump over gap between ranges
+                                                // if we are at end of range[0], remove up to start of range[1]
+                                                if (ranges.end(0) - currentTime < DYNAMIC_MIN_BUFFER_LEVEL) {
+                                                    // remove from beginig of the first range up to start of second
+                                                    // removed range may include currentTime, will check it later
+                                                    removeEnd = ranges.start(1);
+                                                    self.debug.info("[BufferController]["+type+"] Remove dynamic ranges up to " + removeEnd);
+                                                }
+                                            }
+                                            removeBuffer.call(self, -1, removeEnd).then(
                                                 function() {
                                                     debugBufferRange.call(self);
+                                                    var ranges = self.sourceBufferExt.getAllRanges(buffer);
+                                                    if (currentTime < ranges.start(0)) {
+                                                        // if removed range includes currentTimePos, seek to start of first range
+                                                        self.debug.info("[BufferController]["+type+"] Set currentTime to " + ranges.start(0));
+                                                        self.videoModel.setCurrentTime(ranges.start(0));
+                                                    }
                                                     deferred.resolve();
                                                 }
                                             );

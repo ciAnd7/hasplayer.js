@@ -834,7 +834,17 @@ Dash.dependencies.DashHandler = function () {
 
             var ln = representation.segments.length,
                 seg,
-                i;
+                i,
+                self = this;
+
+            // Check that playlist moved forward, so that required segment (sn+1) will never be there.
+            if (ln > 0) {
+                seg = representation.segments[0];
+                if (seg.sequenceNumber && (parseInt(seg.sequenceNumber,10) > parseInt(sn,10))) {
+                    self.debug.log("Moving forward segment: sn " + sn + ", forward " + seg.sequenceNumber);
+                    return seg;
+                }
+            }
 
             for (i = 0; i < ln; i += 1) {
                 seg = representation.segments[i];
@@ -1066,7 +1076,8 @@ Dash.dependencies.DashHandler = function () {
                                 //self.debug.log(request);
                                 deferred.resolve(request);
                             } else {
-                                segment = getNextSegmentBySequenceNumber(sn, representation);
+                                segment = getNextSegmentBySequenceNumber.call(self, sn, representation);
+                                self.debug.log("[DashHandler]["+type+"] getNextSegmentBySequenceNumber("+sn+"): " + (segment===null?"null":segment.sequenceNumber));
                                 if (segment === null) {
                                     deferred.resolve(null);
                                 } else {
