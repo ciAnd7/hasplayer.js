@@ -551,7 +551,7 @@ app.controller('DashController', ['$scope', '$window', 'Sources', 'Notes','Contr
 
         if (e.event.code != "HASPLAYER_INIT_ERROR") {
             //stop
-            player.reset();
+            player.reset(2);
         }
     }
 
@@ -888,6 +888,8 @@ app.controller('DashController', ['$scope', '$window', 'Sources', 'Notes','Contr
         if ($scope.chromecast.playing){
             $scope.stopInChromecast();
         }
+        
+        player.reset(0);
 
         initPlayer();
     };

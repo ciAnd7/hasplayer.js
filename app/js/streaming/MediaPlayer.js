@@ -49,7 +49,7 @@ MediaPlayer = function(aContext) {
      *
      */
     var VERSION = "1.2.0",
-        VERSION_HAS = "1.2.1_dev",
+        VERSION_HAS = "1.2.2_dev",
         GIT_TAG = "@@REVISION",
         BUILD_DATE = "@@TIMESTAMP",
         context = aContext,
@@ -103,9 +103,11 @@ MediaPlayer = function(aContext) {
                 streamController = system.getObject("streamController");
                 streamController.setVideoModel(videoModel);
                 streamController.setAutoPlay(autoPlay);
-                streamController.setDefaultAudioLang(defaultAudioLang);
-                streamController.setDefaultSubtitleLang(defaultSubtitleLang);
             }
+
+            streamController.setDefaultAudioLang(defaultAudioLang);
+            streamController.setDefaultSubtitleLang(defaultSubtitleLang);
+
             // ORANGE: add source stream parameters
             streamController.load(source, protectionData);
             system.mapValue("scheduleWhilePaused", scheduleWhilePaused);
@@ -263,7 +265,7 @@ MediaPlayer = function(aContext) {
     system.mapValue("system", system);
     system.mapOutlet("system");
     system.injectInto(context);
-   
+
 
     return {
         /**
@@ -644,8 +646,6 @@ MediaPlayer = function(aContext) {
             loop = videoModel.getElement().loop;
             if (url) {
                 this.metricsModel.addSession(null, url, loop, null, "HasPlayer.js_" + this.getVersionHAS());
-            }else {
-                this.metricsModel.addState("video", "stopped");
             }
 
             this.uriQueryFragModel.reset();
@@ -672,9 +672,10 @@ MediaPlayer = function(aContext) {
          * @access public
          * @memberof MediaPlayer#
          */
-        reset: function() {
+        reset: function(reason) {
             this.attachSource(null);
             protectionData = null;
+            this.metricsModel.addState("video", "stopped", this.getVideoModel().getCurrentTime(), reason);
         },
 
         setDefaultAudioLang: function(language) {
