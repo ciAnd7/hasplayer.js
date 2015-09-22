@@ -623,6 +623,14 @@ Dash.dependencies.DashHandler = function () {
                         if (s.sequenceNumber) {
                             seg.sequenceNumber = s.sequenceNumber;
                         }
+                        // media segment duration could be differ from represenation's
+                        if (s.duration) {
+                            seg.duration = s.duration;
+                        }
+                        // adjust segment presentation time
+                        if (s.time) {
+                            seg.presentationStartTime = representation.adaptation.period.start + s.time;
+                        }
 
                         //self.debug.log("[DashHandler]["+type+"] createSegment: time = " + seg.mediaStartTime + ", availabilityIdx = " + seg.availabilityIdx + ", url = " + seg.media);
 
