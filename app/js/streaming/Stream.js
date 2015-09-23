@@ -490,8 +490,10 @@ MediaPlayer.dependencies.Stream = function() {
             //if a pause command was detected just before this onPlay event, startBuffering again
             //if it was a pause, follow by a seek (in reality just a seek command), don't startBuffering, it's done in onSeeking event
             // we can't, each time, startBuffering in onPlay event (for seek and pause commands) because onPlay event is not fired on IE after a seek command. :-(
-            if (isPaused && !isSeeked) {       
+            if (isPaused && !isSeeked) {
                 startBuffering();
+            } else {
+                this.debug.log("[Stream] Skip startBuffering on play event: isPaused: "+isPaused+", isSeeked: "+isSeeked);
             }
 
             this.metricsModel.addPlayList("video", new Date().getTime(), this.videoModel.getCurrentTime(), "play");
@@ -523,6 +525,7 @@ MediaPlayer.dependencies.Stream = function() {
             this.debug.info("<video> pause event");
             //this.debug.log("[Stream] ################################# Got pause event.");
             isPaused = true;
+            isSeeked = false;
             this.metricsModel.addPlayList("video", new Date().getTime(), this.videoModel.getCurrentTime(), "pause");
             suspend.call(this);
         },
