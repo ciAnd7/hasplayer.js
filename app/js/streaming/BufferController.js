@@ -309,7 +309,9 @@ MediaPlayer.dependencies.BufferController = function () {
                         checkIfSufficientBuffer.call(self);
                     }
                 }
-            );
+            ).catch(function (e) {
+                console.error('Error processing fragment data: %O', e);
+            });
         },
 
         appendToBuffer = function(data, quality, index) {
@@ -354,18 +356,20 @@ MediaPlayer.dependencies.BufferController = function () {
 
                                         // In case of live streams, remove outdated buffer parts and requests
                                         if (isDynamic) {
-                                            var ranges = self.sourceBufferExt.getAllRanges(buffer);
-                                            self.debug.info("[BufferController]["+type+"] Check to removing dynamic ranges " + ranges.length);
                                             var currentTime = self.videoModel.getCurrentTime();
                                             var removeEnd = currentTime - minBufferTime;
-                                            if (ranges.length > 1) {
-                                                // in case of more than one ranges, check to jump over gap between ranges
-                                                // if we are at end of range[0], remove up to start of range[1]
-                                                if (ranges.end(0) - currentTime < DYNAMIC_MIN_BUFFER_LEVEL) {
-                                                    // remove from beginig of the first range up to start of second
-                                                    // removed range may include currentTime, will check it later
-                                                    removeEnd = ranges.start(1);
-                                                    self.debug.info("[BufferController]["+type+"] Remove dynamic ranges up to " + removeEnd);
+                                            var ranges = self.sourceBufferExt.getAllRanges(buffer);
+                                            if (ranges) {
+                                                self.debug.info("[BufferController]["+type+"] Check to removing dynamic ranges " + ranges.length);
+                                                if (ranges.length > 1) {
+                                                    // in case of more than one ranges, check to jump over gap between ranges
+                                                    // if we are at end of range[0], remove up to start of range[1]
+                                                    if (ranges.end(0) - currentTime < DYNAMIC_MIN_BUFFER_LEVEL) {
+                                                        // remove from beginig of the first range up to start of second
+                                                        // removed range may include currentTime, will check it later
+                                                        removeEnd = ranges.start(1);
+                                                        self.debug.info("[BufferController]["+type+"] Remove dynamic ranges up to " + removeEnd);
+                                                    }
                                                 }
                                             }
                                             removeBuffer.call(self, -1, removeEnd).then(
