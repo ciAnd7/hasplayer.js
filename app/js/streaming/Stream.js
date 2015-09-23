@@ -66,6 +66,8 @@ MediaPlayer.dependencies.Stream = function() {
         eventController = null,
         protectionController = undefined,
 
+        lastProgressEvent = -1,
+
         // Encrypted Media Extensions
         onProtectionError = function(event) {
             this.errHandler.sendError(event.data.code, event.data.message, event.data.data);
@@ -580,7 +582,13 @@ MediaPlayer.dependencies.Stream = function() {
         },
 
         onProgress = function() {
-            this.debug.info("<video> progress event");
+            var currentProgressEvent = this.videoModel.getCurrentTime();
+            var progressDur = (currentProgressEvent - lastProgressEvent);
+            this.debug.info("<video> progress event: " + progressDur);
+            lastProgressEvent = currentProgressEvent;
+            if (progressDur == 0) {
+                this.errHandler.sendError(MediaPlayer.dependencies.ErrorHandler.prototype.MEDIA_ERR_DECODE, "buffer is stalled");
+            }
         },
 
         onTimeupdate = function() {
