@@ -145,6 +145,10 @@ Hls.dependencies.HlsDemux = function () {
 
             // Get track from tracks array (trackId start from 1)
             track = tracks[trackId-1];
+            if (track === undefined) {
+                console.warn('demuxTsPacket: track is undefined for trackId ' + trackId + ', tracks is %O', tracks);
+                return;
+            }
 
             // PUSI => start storing new AU
             if (tsPacket.getPusi()) {
@@ -211,7 +215,11 @@ Hls.dependencies.HlsDemux = function () {
                 sample.size = subSamplesLength;
                 length += subSamplesLength;
             }
-            track.samples[track.samples.length-1].duration = track.samples[track.samples.length-2].duration;
+            if (track.samples.length > 1) {
+                track.samples[track.samples.length-1].duration = track.samples[track.samples.length-2].duration;
+            } else if (track.samples.length === 1) {
+                track.samples[0].duration = 0; // FIXME: value?
+            }
 
             // Allocate track data
             track.data = new Uint8Array(length);
